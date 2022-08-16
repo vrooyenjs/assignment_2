@@ -3,6 +3,7 @@
 # Module: COS486-1
 
 # Class imports
+from sortedcontainers import SortedSet
 from collections import Counter
 from nltk.corpus import brown
 import nltk
@@ -139,9 +140,90 @@ def tag_file(file):
         if LOG_LEVEL > 1:
             print(tagged_line)
 
+    output_file.close()
+    input_file.close()
     if LOG_LEVEL > 1:
         print('Ending tag_file')
 # end def tag_file(FILE_TO_TAG)
+
+
+def confusion_matrix():
+    if LOG_LEVEL > 1:
+        print('Staring confusion_matrix')
+
+    # Input file
+    input_file = 'question_2_resources/pos_test.txt_out'
+    pos_test = open(input_file, "r")
+
+    # Golden file
+    golden_file = 'question_2_resources/pos_golden_standard.txt'
+    pos_golden_standard = open(golden_file, "r")
+
+    # We look at each word and see what it was supposed to be ... and what it was tagged as.
+    tag_list = SortedSet()
+    incorrect_tags = []
+    total_miss_tags = 0
+    test_line = 'not empty'
+    while test_line:
+        test_line = pos_test.readline()
+        test_words = test_line.split()
+
+        golden_line = pos_golden_standard.readline()
+        golden_words = golden_line.split()
+
+        i = 0
+        while i < len (golden_words):
+            test_word = test_words[i].split('/')[0]
+            test_tag = test_words[i].split('/')[1]
+            golden_word = golden_words[i].split('/')[0]
+            golden_tag = golden_words[i].split('/')[1]
+
+            tag_list.add(golden_tag)
+            tag_list.add(test_tag)
+
+            if test_tag != golden_tag:
+                if LOG_LEVEL > 2:
+                    print(test_word + '/' + test_tag + ' --> ' + golden_word + '/' + golden_tag)
+                incorrect_tags.append(golden_tag + '/' + test_tag)
+                total_miss_tags = total_miss_tags + 1
+
+            i = i + 1
+
+    tagging_statistics = Counter(incorrect_tags)
+
+    if LOG_LEVEL > 1:
+        print(tagging_statistics)
+
+    print(tag_list)
+    print()
+    # Print column names
+    print(''.ljust(10, ' '), end='')
+    for col_tag in tag_list:
+        print(col_tag.ljust(5, ' '), end='')
+
+    print()
+    for row_tag in tag_list:
+        print(row_tag.ljust(10, ' '), end='')
+        for col_tag in tag_list:
+            tag = row_tag + '/' + col_tag
+
+            if tag in tagging_statistics.keys():
+                tag_count = tagging_statistics[tag]
+                perc = (tag_count / total_miss_tags) * 100
+                perc_str = '{:.1f}'.format(perc)
+                print(perc_str.ljust(5, ' '), end='')
+            else:
+                print('-'.ljust(5, ' '), end='')
+
+        print()
+
+    print("\n\n")
+
+    pos_test.close()
+    pos_golden_standard.close()
+    if LOG_LEVEL > 1:
+        print('Ending confusion_matrix')
+# end def confusion_matrix
 
 
 # Functions used as the main entry into the application
@@ -156,8 +238,10 @@ def main():
     # argmax()
 
     # Part b
-    tag_file(FILE_TO_TAG)
+    # tag_file(FILE_TO_TAG)
 
+    # Part c
+    confusion_matrix()
     if LOG_LEVEL > 1:
         print('Ending main')
 # end def main()
